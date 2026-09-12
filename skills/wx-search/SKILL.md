@@ -37,7 +37,6 @@ Run it as `wx-search` if installed (`npm i -g wx-search`), or from a clone with 
 | `search <query> [--page <n>] [--user-agent <ua>]` | One page of results (~10 items) as JSON. `--page` defaults to 1. |
 | `search-all <query> [--max-pages <n>] [--user-agent <ua>]` | Auto-paginate (1s delay between pages), stop on empty page or `--max-pages` (default 10). |
 | `content <real_url> [--referer <url>] [--user-agent <ua>]` | Print article body as plain text. |
-| `skill` | Print this skill document. |
 
 ## User-Agent
 
