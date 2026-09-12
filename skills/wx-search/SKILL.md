@@ -1,51 +1,55 @@
 ---
 name: wx-search
-description: Search and read WeChat official account (微信公众号) articles from the command line via Sogou WeChat search. Use this skill whenever the user wants to find, search, read, summarize, or analyze 公众号 articles or WeChat content — including requests like "搜一下公众号关于 X 的文章", "find WeChat articles about X", reading an mp.weixin.qq.com link, or researching Chinese-language coverage of a topic where WeChat official accounts are a primary source.
+description: 用搜狗微信搜索从命令行搜公众号文章并抓正文。当用户想找、搜、读、总结或分析公众号文章、微信内容时用这个 skill，比如“搜一下公众号关于 X 的文章”、读 mp.weixin.qq.com 链接、查某个话题的中文公众号覆盖。
 ---
 
-# wx-search: Search & Read WeChat Official Account Articles
+# wx-search：搜公众号文章、读正文
 
-`wx-search` searches WeChat official account (公众号) articles through Sogou WeChat search and extracts article body text. Output is JSON (search) or plain text (content) on stdout; all failures exit 1 with the message on stderr.
+`wx-search` 经搜狗微信搜索搜公众号（微信公众号）文章并提取正文。搜索输出 JSON，正文输出纯文本；失败时退出码非 0，原因打到 stderr。
 
-Run it as `wx-search` if installed (`npm i -g wx-search`), or from a clone with `node dist/index.js` (run `npm install && npm run build` first).
+统一用 `npx wx-search` 跑，不用安装：
 
-## Typical workflow
+```bash
+npx wx-search search "人工智能"
+```
 
-1. **Search** for articles by keyword:
+## 典型流程
 
-   ```bash
-   wx-search search "人工智能"
-   ```
-
-   Output is a JSON array; each item has:
-   - `title` — article title
-   - `link` — Sogou redirect URL (use as `--referer` when fetching content)
-   - `real_url` — resolved `mp.weixin.qq.com` URL (empty string `""` if resolution failed, usually due to rate limiting)
-   - `publish_time` — ISO 8601 timestamp
-   - `page` — result page number, as a string
-
-2. **Read** an article's body text, passing `real_url` as the argument and `link` as `--referer`:
+1. **先搜**文章：
 
    ```bash
-   wx-search content "<real_url>" --referer "<link>"
+   npx wx-search search "人工智能"
    ```
 
-## Commands
+   输出 JSON 数组，每项字段：
+   - `title` — 文章标题
+   - `link` — 搜狗跳转链接（抓正文时经 `--referer` 传入）
+   - `real_url` — 真实 `mp.weixin.qq.com` 地址（空字符串表示解析失败，多为限流）
+   - `publish_time` — ISO 8601 发布时间
+   - `page` — 结果页码（字符串）
 
-| Command | Purpose |
+2. **再读**正文（`real_url` 作参数，`link` 作 `--referer`）：
+
+   ```bash
+   npx wx-search content "<real_url>" --referer "<link>"
+   ```
+
+## 命令
+
+| 命令 | 用途 |
 | --- | --- |
-| `search <query> [--page <n>] [--user-agent <ua>]` | One page of results (~10 items) as JSON. `--page` defaults to 1. |
-| `search-all <query> [--max-pages <n>] [--user-agent <ua>]` | Auto-paginate (1s delay between pages), stop on empty page or `--max-pages` (default 10). |
-| `content <real_url> [--referer <url>] [--user-agent <ua>]` | Print article body as plain text. |
+| `search <query> [--page <n>] [--user-agent <ua>]` | 单页约 10 条 JSON，`--page` 默认 1 |
+| `search-all <query> [--max-pages <n>] [--user-agent <ua>]` | 自动翻页（页间隔 1s），遇空页或达上限停止，`--max-pages` 默认 10 |
+| `content <real_url> [--referer <url>] [--user-agent <ua>]` | 输出正文纯文本 |
 
-## User-Agent
+## 自定义 UA
 
-All network commands accept `--user-agent <ua>`; the `WX_SEARCH_UA` env var works too (flag wins). If Sogou starts challenging the built-in UA with an anti-spider error, retry with a plain Chrome UA instead of hammering the endpoint.
+所有联网命令都支持 `--user-agent <ua>`，环境变量 `WX_SEARCH_UA` 等效（flag 优先）。搜狗反爬挑战内置 UA 时，换个纯 Chrome UA 重试，别猛刷。
 
-## Important tips
+## 注意事项
 
-- **Keep request volume low.** Heavy usage triggers Sogou's captcha; the symptom is `real_url` coming back as `""` or the search command erroring with an anti-spider message. When that happens, back off and retry later — don't hammer the endpoint.
-- **Prefer `search` over `search-all`** unless the user genuinely needs many results; fewer requests means less captcha risk.
-- **Always pass `--referer`** when fetching content if you have the `link` field — it noticeably improves the success rate against WeChat's anti-scraping checks.
-- Search queries in Chinese generally return better results than English for 公众号 content.
-- Nonzero exit code means failure; the reason is on stderr. Don't parse stdout on failure.
+- **控制请求量。**刷太猛会触发搜狗验证码：表现为 `real_url` 为空或 search 直接报反爬错；退避过会儿再试，别硬刷。
+- 只要几条结果就用 `search`，别用 `search-all`。
+- 抓正文尽量带 `--referer`（传 `link` 字段），成功率明显更高。
+- 中文关键词效果普遍好于英文。
+- 退出码非 0 即失败，看 stderr，别解析 stdout。
