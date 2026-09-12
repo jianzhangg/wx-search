@@ -18,6 +18,21 @@ npm i -g wx-search
 npm install && npm run build && node dist/index.js search "关键词"
 ```
 
+## 作为 Agent Skill 安装
+
+仓库根的 `SKILL.md` 带标准 frontmatter（name + description），直接兼容 [skills.sh](https://skills.sh) 生态，拉下来就能装：
+
+```bash
+# 进自己的 agent 装一个（支持 opencode / claude-code / codex / cursor 等 70+）
+npx skills add jianzhangg/wx-search
+# 只看不装：先列出发现的 skill
+npx skills add jianzhangg/wx-search --list
+# 装给指定 agent、全局生效、免确认
+npx skills add jianzhangg/wx-search -a opencode -g -y
+```
+
+装完不用记命令也可以自助上手：`wx-search skill` 直接打印同一份 skill 文档。
+
 ## 用法
 
 ```bash

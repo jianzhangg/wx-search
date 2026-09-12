@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 
 import { USER_AGENT_ENV_VAR } from './constants.js';
@@ -15,6 +18,7 @@ Usage:
   ${CLI_NAME} search <query> [--page <n>] [--user-agent <ua>]            Search articles, one page (JSON to stdout)
   ${CLI_NAME} search-all <query> [--max-pages <n>] [--user-agent <ua>]   Search with auto pagination (JSON to stdout)
   ${CLI_NAME} content <real_url> [--referer <url>] [--user-agent <ua>]   Fetch article body text (plain text to stdout)
+  ${CLI_NAME} skill                                                Print the agent skill document (SKILL.md)
 
 Options:
   --page <n>         Page number for search (default: 1)
@@ -104,6 +108,18 @@ async function main(): Promise<void> {
                 fail(content);
             }
             console.log(content);
+            break;
+        }
+        case 'skill': {
+            // SKILL.md ships at the package root, one level above dist/ (or src/
+            // when running from source), so agents can learn usage via
+            // `wx-search skill`
+            const skillPath = join(
+                dirname(fileURLToPath(import.meta.url)),
+                '..',
+                'SKILL.md',
+            );
+            console.log(readFileSync(skillPath, 'utf8'));
             break;
         }
         default:

@@ -1,50 +1,52 @@
-# Skill: wx-search（fork）
+---
+name: wx-search
+description: Search and read WeChat official account (微信公众号) articles from the command line via Sogou WeChat search. Use this skill whenever the user wants to find, search, read, summarize, or analyze 公众号 articles or WeChat content — including requests like "搜一下公众号关于 X 的文章", "find WeChat articles about X", reading an mp.weixin.qq.com link, or researching Chinese-language coverage of a topic where WeChat official accounts are a primary source.
+---
 
-微信公众号文章搜索与正文抓取。搜索输出 JSON 到 stdout，正文输出纯文本，失败时退出码非 0。
+# wx-search: Search & Read WeChat Official Account Articles
 
-## 调用方式
+`wx-search` searches WeChat official account (公众号) articles through Sogou WeChat search and extracts article body text. Output is JSON (search) or plain text (content) on stdout; all failures exit 1 with the message on stderr.
 
-```bash
-wx-search search "关键词"
-```
+Run it as `wx-search` if installed (`npm i -g wx-search`), or from a clone with `node dist/index.js` (run `npm install && npm run build` first).
 
-## 命令一览
+## Typical workflow
 
-| 命令 | 用途 |
-|---|---|
-| `search <query> [--page <n>] [--user-agent <ua>]` | 单页结果（约 10 条），JSON 输出。`--page` 默认 1 |
-| `search-all <query> [--max-pages <n>] [--user-agent <ua>]` | 自动翻页（页间隔 1s），遇空页或达上限停止，`--max-pages` 默认 10 |
-| `content <real_url> [--referer <url>] [--user-agent <ua>]` | 输出文章正文纯文本 |
+1. **Search** for articles by keyword:
 
-环境变量 `WX_SEARCH_UA` 与 `--user-agent` 等效（flag 优先）。搜狗挑战内置 UA 时换一个即可。
+   ```bash
+   wx-search search "人工智能"
+   ```
 
-## 标准工作流
+   Output is a JSON array; each item has:
+   - `title` — article title
+   - `link` — Sogou redirect URL (use as `--referer` when fetching content)
+   - `real_url` — resolved `mp.weixin.qq.com` URL (empty string `""` if resolution failed, usually due to rate limiting)
+   - `publish_time` — ISO 8601 timestamp
+   - `page` — result page number, as a string
 
-**1. 先搜索**
+2. **Read** an article's body text, passing `real_url` as the argument and `link` as `--referer`:
 
-```bash
-wx-search search "人工智能"
-```
+   ```bash
+   wx-search content "<real_url>" --referer "<link>"
+   ```
 
-输出为 JSON 数组，每项字段：
+## Commands
 
-| 字段 | 说明 |
-|---|---|
-| `title` | 文章标题 |
-| `link` | 搜狗跳转链接，抓正文时作为 `--referer` 传入 |
-| `real_url` | 解析后的真实 `mp.weixin.qq.com` 地址 |
-| `publish_time` | ISO 8601 发布时间 |
-| `page` | 结果页码（字符串） |
+| Command | Purpose |
+| --- | --- |
+| `search <query> [--page <n>] [--user-agent <ua>]` | One page of results (~10 items) as JSON. `--page` defaults to 1. |
+| `search-all <query> [--max-pages <n>] [--user-agent <ua>]` | Auto-paginate (1s delay between pages), stop on empty page or `--max-pages` (default 10). |
+| `content <real_url> [--referer <url>] [--user-agent <ua>]` | Print article body as plain text. |
+| `skill` | Print this skill document. |
 
-**2. 再抓正文**（把上一步的 `real_url` 作为参数、`link` 作为 `--referer`）
+## User-Agent
 
-```bash
-wx-search content "<real_url>" --referer "<link>"
-```
+All network commands accept `--user-agent <ua>`; the `WX_SEARCH_UA` env var works too (flag wins). If Sogou starts challenging the built-in UA with an anti-spider error, retry with a plain Chrome UA instead of hammering the endpoint.
 
-## 使用建议
+## Important tips
 
-- 中文关键词的返回质量普遍好于英文。
-- 只需要几条结果时用 `search`；确实需要大量结果再用 `search-all`。
-- 抓正文时带上 `--referer`（传搜索结果的 `link`），成功率更高。
-- 遇到反爬报错先换 UA 重试，别猛刷。
+- **Keep request volume low.** Heavy usage triggers Sogou's captcha; the symptom is `real_url` coming back as `""` or the search command erroring with an anti-spider message. When that happens, back off and retry later — don't hammer the endpoint.
+- **Prefer `search` over `search-all`** unless the user genuinely needs many results; fewer requests means less captcha risk.
+- **Always pass `--referer`** when fetching content if you have the `link` field — it noticeably improves the success rate against WeChat's anti-scraping checks.
+- Search queries in Chinese generally return better results than English for 公众号 content.
+- Nonzero exit code means failure; the reason is on stderr. Don't parse stdout on failure.
