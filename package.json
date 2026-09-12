@@ -10,7 +10,7 @@
   "files": [
     "dist",
     "README.md",
-    "SKILL.md",
+    "skills",
     "LICENSE"
   ],
   "engines": {
